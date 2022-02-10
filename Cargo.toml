@@ -1,0 +1,16 @@
+[package]
+name = "lambdascript"
+version = "0.1.0"
+authors = ["Chuck Liang"]
+edition = "2021"
+license = "MIT"
+description = "Educational tool illustrating beta reduction of untyped lambda terms, parser generation"
+repository = "https://github.com/chuckcscccl/lambdascript/"
+keywords = ["lambda-calculus", "lambda", "beta-reduction", "education"]
+categories = ["command-line-utilities", "parsing", "mathematics"]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rustlr = "0.2"
+fixedstr = "0.1"
+chrono = "0.4"
