@@ -321,11 +321,12 @@ pub struct LamLexer<'t>
 }
 impl<'t> LamLexer<'t>
 {
-  pub fn new(s:StrTokenizer<'t>) -> LamLexer<'t>
+  pub fn new(mut s:StrTokenizer<'t>) -> LamLexer<'t>
   {
     let mut kwh = HashSet::with_capacity(16);
     for kw in ["define","lambda","lam","Lam","λ","let","in","lazy","weak","CBV","strong"]
     { kwh.insert(kw);}
+    s.add_single(';');
     LamLexer {
       stk: s,
       keywords : kwh,

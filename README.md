@@ -71,7 +71,7 @@ combinators.
 
 At the `<<<` prompt the following special directives can be given:
 
-  * `exit` or `quit`: exists the program
+  * `exit` or `quit`: exits the program
   * `use lambda` or `use lam` or `use Lam` or `use \`: On some systems,
     the Greek character λ (unicode 0x03BB) may fail to display properly.
     To change the symbol displayed for lambda, you can choose between one
