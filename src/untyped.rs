@@ -9,7 +9,7 @@
 
 extern crate rustlr;
 extern crate fixedstr;
-use fixedstr::{fstr,str8};
+use fixedstr::{str8,str16};
 use rustlr::{Tokenizer,RawToken,TerminalToken,StrTokenizer,LBox,LexSource,unbox};
 use crate::untyped::Term::*;
 use std::collections::{HashMap,HashSet};
@@ -19,6 +19,8 @@ use std::mem::swap;
 const greeklam:&'static str = "\u{03bb}"; // unicode 03bb is lower case lambda
 const LAMBDA:&'static str = "lambda "; // unicode 03bb is lower case lambda
 const LAM:&'static str = "lam "; // unicode 03bb is lower case lambda
+
+type Defsmap = HashMap<str8,Term>;
 
 #[derive(Debug,Clone)]
 pub enum Term
@@ -166,7 +168,7 @@ impl BetaReducer
 
   // 1-step beta reduction, normal order, returns true if reduction occurred
   // expands defs only when necessary.  MOST CRUCIAL FUNCTION
-  pub fn beta1(&mut self, t:&mut Term,defs:&HashMap<str8,Term>) -> bool
+  pub fn beta1(&mut self, t:&mut Term,defs:&Defsmap) -> bool
   {
     match t {
       App(A,B) =>  {
@@ -190,7 +192,7 @@ impl BetaReducer
     }//match
   }//beta1
 
-  pub fn reduce_to_norm(&mut self, t:&mut Term, defs:&HashMap<str8,Term>)
+  pub fn reduce_to_norm(&mut self, t:&mut Term, defs:&Defsmap)
   {
      if self.trace>0 {println!("{}",t.format(self.lam));}
      let mut reducible = true;
@@ -206,8 +208,8 @@ impl BetaReducer
      if self.trace==1 {println!(" =>  {}",t.format(self.lam));}
   }// reduce to beta normal form (strong norm via CBN)
 
-// weak head reduction, CBV
-pub fn weak_beta(&mut self, t:&Term, defs:&HashMap<str8,Term>)
+// weak CBV reduction
+pub fn weak_beta(&mut self, t:&Term, defs:&Defsmap)
 {
    if self.trace>0 {  println!("weak {}",t.format(self.lam));  }
    let mut t2 = t.clone();
@@ -219,7 +221,7 @@ pub fn weak_beta(&mut self, t:&Term, defs:&HashMap<str8,Term>)
    }
    if self.trace==1 {println!(" =>  {}",t2.format(self.lam));}
 }//weak_beta
-fn weak_beta1(&mut self, t:&mut Term, defs:&HashMap<str8,Term>) -> bool
+fn weak_beta1(&mut self, t:&mut Term, defs:&Defsmap) -> bool
 { 
   match t {
     App(a,b) => {
@@ -227,8 +229,6 @@ fn weak_beta1(&mut self, t:&mut Term, defs:&HashMap<str8,Term>) -> bool
         // reduce b first:
         self.weak_beta1(b,defs) || 
         self.beta1(t,defs) 
-//        let wt =self.weak_beta(t,defs); // do it again
-//        wb || bt || wt
       }//redex found
       else {self.weak_beta1(a,defs)}
     },
@@ -249,7 +249,7 @@ pub fn getvar(t:&Term) -> str8 {if let Var(x)=t {*x} else {str8::default()}}
 ////// given hashmap of definitions
 
 // expand definitions lazily
-fn expand(t:&mut Term, defs:&HashMap<str8,Term>) -> bool
+fn expand(t:&mut Term, defs:&Defsmap) -> bool
 {
    match t {
      Var(x) => {
@@ -274,10 +274,10 @@ fn expand(t:&mut Term, defs:&HashMap<str8,Term>) -> bool
 }//expand , returns true if something was expanded
 
 
-pub fn eval_prog(prog:&Vec<LBox<Term>>, defs:&mut HashMap<str8,Term>, reducer:&mut BetaReducer)
+pub fn eval_prog(prog:&Vec<LBox<Term>>, defs:&mut Defsmap, reducer:&mut BetaReducer)
 {
   //let mut reducer = BetaReducer::new();
-  //let mut defs = HashMap::<str8,Term>::new();
+  //let mut defs = HashMap::<str16,Term>::new();
   for line in prog
   {
      match &**line {

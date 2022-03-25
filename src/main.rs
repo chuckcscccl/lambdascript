@@ -30,7 +30,7 @@ fn main()
   println!("For educational reasons this program may be temporarily disabled during certain time periods");
   let time = chrono::offset::Local::now();
 
-  if time.year()>2022 || time.month()>8 {
+  if time.year()>2022 {
     println!("\nThe lifetime of this program has expired. A new version will be released at the appropriate time.");
     return;
   }

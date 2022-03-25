@@ -35,7 +35,7 @@ define NIL = FALSE;   // represents empty list
 define ISNIL = lambda p.p (lambda a.lambda b.lambda z.FALSE) TRUE;
 
 // Recursion (loops) and divergence.
-define lazy INFINITY = (lambda x.(x x)) (lambda x.(x x));
+define lazy INFTY = (lambda x.(x x)) (lambda x.(x x));
 define lazy FIX = lambda m.(lambda x.m (x x)) (lambda y.m (y y));
 
 // A sample linked list

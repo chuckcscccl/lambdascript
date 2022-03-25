@@ -12,5 +12,5 @@ categories = ["command-line-utilities", "parsing", "mathematics"]
 
 [dependencies]
 rustlr = "0.2"
-fixedstr = "0.1"
+fixedstr = "0.2"
 chrono = "0.4"
