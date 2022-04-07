@@ -54,7 +54,7 @@ K I INFTY x
 ```
 The reduction terminated because normal-order (call-by-name)
 evaluation is applied by default.  If the the last line of the file
-was replaced with `weak (K I INFTY x)`, then wea reduction using
+was replaced with `weak (K I INFTY x)`, then weak reduction using
 call-by-value will take place, resulting in an infinite loop.  There
 will likewise be an infinite loop if `lazy` was missing from the
 definition of `INFTY`.  Full, normal-order evaluation and weak
