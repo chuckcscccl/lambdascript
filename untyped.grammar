@@ -1,4 +1,4 @@
-# Grammar for lambda calculus with step-by-step reduction
+# Grammar for untyped lambda calculus
 
 !use rustlr::{LBox,unbox};
 !use crate::untyped::*;
@@ -66,12 +66,12 @@ T ==> define lazy ID:@Var(x)@ = T:v {
 LAMSYM --> lambda | lam | Lam
 
 
-## untypedlexer specs  - need rustlr 0.2.3
-#!use fixedstr::str8;
-#lexname DOT .
-#lexvalue INTEGER Num(n) Const(n)
-#lexvalue Liang Alphanum("liang") Nothing
-#lexvalue ID Alphanum(a) Var(str8::from(a))
+## untypedlexer specs
+!use fixedstr::str8;
+lexname DOT .
+lexvalue INTEGER Num(n) Const(n)
+lexvalue Liang Alphanum("liang") Nothing
+lexvalue ID Alphanum(a) Var(str8::from(a))
 
 EOF
 

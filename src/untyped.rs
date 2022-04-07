@@ -9,18 +9,15 @@
 
 extern crate rustlr;
 extern crate fixedstr;
-use fixedstr::{str8,str16};
+use fixedstr::{fstr,str8};
 use rustlr::{Tokenizer,RawToken,TerminalToken,StrTokenizer,LBox,LexSource,unbox};
 use crate::untyped::Term::*;
 use std::collections::{HashMap,HashSet};
 use std::mem::swap;
 ///// straightforward lambda calculus, with step by step reductions.
 
-const greeklam:&'static str = "\u{03bb}"; // unicode 03bb is lower case lambda
-const LAMBDA:&'static str = "lambda "; // unicode 03bb is lower case lambda
-const LAM:&'static str = "lam "; // unicode 03bb is lower case lambda
-
-type Defsmap = HashMap<str8,Term>;
+const lowerlam:&'static str = "\u{03bb}"; // unicode 03bb is lower case lambda
+const LAM:&'static str = "lambda "; // unicode 03bb is lower case lambda
 
 #[derive(Debug,Clone)]
 pub enum Term
@@ -38,24 +35,24 @@ pub enum Term
 impl Default for Term { fn default()->Self {Nothing} }
 impl Term
 {
-  pub fn to_string(&self) -> String { self.format(greeklam) }
+  pub fn to_string(&self) -> String { self.format(lowerlam) }
   pub fn format(&self,lam:&str) -> String
   {
     match self {
       Var(x) => format!("{}",x),
       Const(n) =>format!("{}",n),
       App(a,b) => {
-        let mut a2 = a.format(lam);
+        let mut a2 = a.to_string();
         if let Abs(_,_) = &**a {a2 = format!("({})",a2);}
-        let mut bs = b.format(lam);
+        let mut bs = b.to_string();
         if let App(_,_) = &**b {bs = format!("({})",bs);}
         else if let Abs(_,_) = &**b {bs = format!("({})",bs);}
         format!("{} {}",a2, bs)
       },
       Abs(x,a) =>  {
-        let a2 = a.format(lam);
+        let a2 = a.to_string();
         let mut an = format!("{}{}",lam,x);
-        if let Abs(_,_) = &**a  { if (lam!=greeklam && lam!="\\") || x.len()>1 {an.push('.');} }
+        if let Abs(_,_) = &**a  { if lam!=lowerlam {an.push(' ');} }
         else { an.push('.'); }
         an.push_str(&a2);
         an
@@ -90,14 +87,11 @@ pub struct BetaReducer
 {
    cx:u16,  // index for alpha-conversion
    trace:u8,
-   lam:&'static str, // symbol representing lambda
 }
 impl BetaReducer
 {
    pub fn new() -> BetaReducer
-   { BetaReducer {cx:0, trace:5, lam:greeklam} }
-   pub fn setlambda(&mut self, x:&'static str) {self.lam=x;}
-   pub fn set_trace(&mut self, x:u8) {self.trace=x;}
+   { BetaReducer {cx:0, trace:0} }
    pub fn newvar(&mut self, x:&str8) -> str8
    {
       self.cx += 1;
@@ -129,7 +123,7 @@ impl BetaReducer
               let mut amap2 = amap.clone(); // not efficient!
               amap2.insert(*x,x2);
               if x!=&x2 {
-                if self.trace>3 {
+                if self.trace>0 {
                   println!(" < alpha conversion of {} to {} >",x,&x2);
                 }
                 swap(x,&mut x2);
@@ -168,13 +162,13 @@ impl BetaReducer
 
   // 1-step beta reduction, normal order, returns true if reduction occurred
   // expands defs only when necessary.  MOST CRUCIAL FUNCTION
-  pub fn beta1(&mut self, t:&mut Term,defs:&Defsmap) -> bool
+  pub fn beta1(&mut self, t:&mut Term,defs:&HashMap<str8,Term>) -> bool
   {
     match t {
       App(A,B) =>  {
          while let Var(id) = &mut **A {
            if let Some(iddef) = defs.get(id) {
-             //println!("= ({}) {}",iddef.format(self.lam),unbox!(B).format(self.lam));
+             //println!("= ({}) {}",iddef.to_string(),unbox!(B).to_string());
              let mut def2 = iddef.clone();
              swap(&mut **A, &mut def2);
            } else {break;}
@@ -192,36 +186,34 @@ impl BetaReducer
     }//match
   }//beta1
 
-  pub fn reduce_to_norm(&mut self, t:&mut Term, defs:&Defsmap)
+  pub fn reduce_to_norm(&mut self, t:&mut Term, defs:&HashMap<str8,Term>)
   {
-     if self.trace>0 {println!("{}",t.format(self.lam));}
+     if self.trace>0 {println!("{}",t.to_string());}
      let mut reducible = true;
      while reducible {
-       if self.trace>2 && expand(t,defs) {
-         println!("= {}",t.format(self.lam));
+       if self.trace>0 && expand(t,defs) {
+         println!("= {}",t.to_string());
        }
        reducible = self.beta1(t,defs);
-       if reducible && self.trace>1 {
-           println!(" =>  {}",t.format(self.lam));
+       if reducible && self.trace>0 {
+           println!(" =>  {}",t.to_string());
        }
-     }// while reducible
-     if self.trace==1 {println!(" =>  {}",t.format(self.lam));}
+     }
   }// reduce to beta normal form (strong norm via CBN)
 
-// weak CBV reduction
-pub fn weak_beta(&mut self, t:&Term, defs:&Defsmap)
+// weak head reduction, CBV
+pub fn weak_beta(&mut self, t:&Term, defs:&HashMap<str8,Term>)
 {
-   if self.trace>0 {  println!("weak {}",t.format(self.lam));  }
+   if self.trace>0 {  println!("weak {}",t.to_string());  }
    let mut t2 = t.clone();
    while expand(&mut t2,&defs) {
-       if self.trace>2 {println!("= {}",t2.format(self.lam));}
+       if self.trace>0 {println!("= {}",t2.to_string());}
    }
    while self.weak_beta1(&mut t2,defs) {
-       if self.trace>1 {println!(" =>  {}",t2.format(self.lam));}
+       if self.trace>0 {println!(" =>  {}",t2.to_string());}
    }
-   if self.trace==1 {println!(" =>  {}",t2.format(self.lam));}
 }//weak_beta
-fn weak_beta1(&mut self, t:&mut Term, defs:&Defsmap) -> bool
+fn weak_beta1(&mut self, t:&mut Term, defs:&HashMap<str8,Term>) -> bool
 { 
   match t {
     App(a,b) => {
@@ -229,6 +221,8 @@ fn weak_beta1(&mut self, t:&mut Term, defs:&Defsmap) -> bool
         // reduce b first:
         self.weak_beta1(b,defs) || 
         self.beta1(t,defs) 
+//        let wt =self.weak_beta(t,defs); // do it again
+//        wb || bt || wt
       }//redex found
       else {self.weak_beta1(a,defs)}
     },
@@ -249,7 +243,7 @@ pub fn getvar(t:&Term) -> str8 {if let Var(x)=t {*x} else {str8::default()}}
 ////// given hashmap of definitions
 
 // expand definitions lazily
-fn expand(t:&mut Term, defs:&Defsmap) -> bool
+fn expand(t:&mut Term, defs:&HashMap<str8,Term>) -> bool
 {
    match t {
      Var(x) => {
@@ -274,31 +268,29 @@ fn expand(t:&mut Term, defs:&Defsmap) -> bool
 }//expand , returns true if something was expanded
 
 
-pub fn eval_prog(prog:&Vec<LBox<Term>>, defs:&mut Defsmap, reducer:&mut BetaReducer)
+pub fn eval_prog(prog:&Vec<LBox<Term>>, defs:&mut HashMap<str8,Term>)
 {
-  //let mut reducer = BetaReducer::new();
-  //let mut defs = HashMap::<str16,Term>::new();
+  let mut reducer = BetaReducer::new();
+  //let mut defs = HashMap::<str8,Term>::new();
   for line in prog
   {
      match &**line {
        Def(weak,x,xdef) => {
          let mut xdef2 = unbox!(xdef).clone(); //*xdef.exp.clone();
          if *weak {
-            let trace0 = reducer.trace;
             reducer.trace=0; reducer.cx=0;
             reducer.reduce_to_norm(&mut xdef2,defs);            
             //reducer.weak_beta(&mut xdef2,defs);
-            reducer.trace=trace0;
          }
          defs.insert(*x,xdef2);
        },
        Weak(t) => {
-         /*reducer.trace=5;*/ reducer.cx=0;
+         reducer.trace=1; reducer.cx=0;
          reducer.weak_beta(t,defs);
          println!();         
        },
        t => {
-         /*reducer.trace=5;*/ reducer.cx=0;
+         reducer.trace=1; reducer.cx=0;
          let ref mut t2 = t.clone();
          reducer.reduce_to_norm(t2,defs);
          println!();
@@ -312,7 +304,8 @@ pub fn eval_prog(prog:&Vec<LBox<Term>>, defs:&mut Defsmap, reducer:&mut BetaRedu
 
 
 
-/////////////////// lexer
+/////////////////// lexer (now autogenerated)
+/*
 
 pub struct LamLexer<'t>
 {
@@ -321,12 +314,11 @@ pub struct LamLexer<'t>
 }
 impl<'t> LamLexer<'t>
 {
-  pub fn new(mut s:StrTokenizer<'t>) -> LamLexer<'t>
+  pub fn new(s:StrTokenizer<'t>) -> LamLexer<'t>
   {
     let mut kwh = HashSet::with_capacity(16);
     for kw in ["define","lambda","lam","Lam","λ","let","in","lazy","weak","CBV","strong"]
     { kwh.insert(kw);}
-    s.add_single(';');
     LamLexer {
       stk: s,
       keywords : kwh,
@@ -346,7 +338,7 @@ impl<'t> Tokenizer<'t,Term> for LamLexer<'t>
       let tt =  match tok.0 {
         RawToken::Symbol(".") => TerminalToken::from_raw(tok,"DOT",Nothing),
         RawToken::Symbol(s) => TerminalToken::from_raw(tok,s,Nothing),
-        RawToken::Alphanum(a) if a=="Liang" || a=="liang" || a=="LIANG" || a=="Chuck" || a=="chuck" => {
+        RawToken::Alphanum(a) if a=="Liang" || a=="liang" || a=="LIANG" => {
           TerminalToken::from_raw(tok,"Liang",Nothing)
         },
         RawToken::Alphanum(a) if self.keywords.contains(a) => {
@@ -359,3 +351,4 @@ impl<'t> Tokenizer<'t,Term> for LamLexer<'t>
       Some(tt)
    }//nextsym
 }
+*/
