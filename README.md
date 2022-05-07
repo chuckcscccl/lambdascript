@@ -39,30 +39,29 @@ Given a file [simple.ls](https://cs.hofstra.edu/~cscccl/rustlr_project/lambdascr
 ```
 define I = lambda x.x;
 define K = lambda x.lambda y.x;
-define lazy INFTY = (lambda x.x x) (lambda x.x x);
+define lazy INFINITY = (lambda x.x x) (lambda x.x x);
 
-K I INFTY x;
+K I INFINITY x;
 ```
 **`lambdascript simple.ls`** produces the following output:
 ```
-K I INFTY x
-= (λxλy.x) I INFTY x
- =>  (λy.I) INFTY x
-= (λyλx.x) INFTY x
+K I INFINITY x
+= (λxλy.x) I INFINITY x
+ =>  (λy.I) INFINITY x
+= (λyλx.x) INFINITY x
  =>  (λx.x) x
  =>  x
 ```
 The reduction terminated because normal-order (call-by-name)
 evaluation is applied by default.  If the the last line of the file
-was replaced with `weak (K I INFTY x)`, then weak reduction using
+was replaced with `weak (K I INFINITY x)`, then weak reduction using
 call-by-value will take place, resulting in an infinite loop.  There
 will likewise be an infinite loop if `lazy` was missing from the
-definition of `INFTY`.  Full, normal-order evaluation and weak
+definition of `INFINITY`.  Full, normal-order evaluation and weak
 call-by-value are the only reduction strategies implemented in
 lambdascript.
 
-All variables and identifiers are limited to a length of 7 characters
-(thus INFTY instead of INFINITY) for reasons of efficiency.
+All variables and identifiers are limited to a length of 15 characters.
 
 After a script is executed, the interpreter automatically enters interactive
 mode with the definitions from the script still available.
