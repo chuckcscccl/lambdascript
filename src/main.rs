@@ -7,7 +7,7 @@
 extern crate rustlr;
 use rustlr::*;
 extern crate fixedstr;
-use fixedstr::str8;
+use fixedstr::str16;
 //mod abstmachine;
 //use crate::abstmachine::*;
 use chrono;
@@ -19,6 +19,9 @@ mod untyped;
 use untyped::*;
 mod untypedparser;
 use untypedparser::*;
+
+//mod exsubs;
+//mod lmb;
 
 fn main()
 {
@@ -37,7 +40,7 @@ fn main()
   }
 
   let mut parser = make_parser();
-  let ref mut defs = HashMap::<str8,Term>::new();
+  let ref mut defs = HashMap::<str16,Term>::new();
   let args:Vec<String> = std::env::args().collect(); // command-line args
   if args.len()>1 {
     let srcfile = &args[1];
