@@ -11,6 +11,6 @@ categories = ["command-line-utilities", "parsing", "mathematics"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rustlr = "0.2.4"
+rustlr = "0.2.9"
 fixedstr = "0.2.8"
 chrono = "0.4"
