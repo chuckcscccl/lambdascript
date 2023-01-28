@@ -36,7 +36,7 @@ fn main()
   }
 */
 
-  if time.year()==2022 && time.month()==2 && time.day()>=15 && time.hour()>=4 && time.minute()>=20 && time.day()<=17 {
+  if time.year()==2023 && time.month()==2 && ((time.day()==14 && time.hour()>=4 && time.minute()>=20) || time.day()>14) && time.day()<=16 {
     println!("\nThis tool is temporarily disabled because of online exams in CSC252DL");
     return;
   }
