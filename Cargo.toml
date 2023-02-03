@@ -1,6 +1,6 @@
 [package]
 name = "lambdascript"
-version = "0.1.5"
+version = "0.1.51"
 authors = ["Chuck Liang"]
 edition = "2021"
 license = "MIT"

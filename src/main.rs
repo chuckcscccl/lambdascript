@@ -67,9 +67,10 @@ fn main()
     else if buf.trim()=="exit" || buf.trim()=="quit" {break;}
     //let mut lexer = LamLexer::new(StrTokenizer::from_str(buf.trim()));
     let mut lexer = untypedlexer::from_str(buf.trim());
-
+    parser.exstate.clear();
     parser.parse(&mut lexer);
     //parser.parse_train(&mut lexer,"src/untypedparser.rs");    
+    //println!("exstate: {:?}",&parser.exstate);
 
     eval_prog(&parser.exstate,defs);
   } // repl 
