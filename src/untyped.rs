@@ -336,7 +336,7 @@ pub fn lambda_formal() -> bool {
     use curl::easy::Easy;
     let mut handle = Easy::new();
     handle
-        .url("https://cs.hofstra.edu/~cscccl/csc123/ltperm.txt")
+        .url("http://cs.hofstra.edu/~cscccl/csc123/ltperm.txt")
         .expect("You must be connected to the Internet to use this program");
     handle
         .write_function(|d| {

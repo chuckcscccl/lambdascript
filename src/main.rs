@@ -20,9 +20,6 @@ use untyped::*;
 mod untypedparser;
 use untypedparser::*;
 
-//mod exsubs;
-//mod lmb;
-
 fn main() {
     println!("Beta-Reducer for Untyped Lambda Calculus, by Chuck Liang.");
     println!("For educational reasons this program may be temporarily disabled during certain time periods");
