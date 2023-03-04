@@ -1,6 +1,6 @@
 [package]
 name = "lambdascript"
-version = "0.1.53"
+version = "0.1.54"
 authors = ["Chuck Liang"]
 edition = "2021"
 license = "MIT"
@@ -14,4 +14,4 @@ categories = ["command-line-utilities", "parsing", "mathematics"]
 rustlr = "0.4"
 fixedstr = "0.2.9"
 #chrono = "0.4"
-curl = "0.4.44"
+#curl = "0.4.44"

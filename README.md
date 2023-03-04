@@ -20,9 +20,7 @@ are illustrational or educational in nature:
   reductions can be implemented.
 
 ### Usage
-The program was written in Rust and should be installed as an executable: **`cargo install lambdascript`**. You must have Rust installed (from <https://rust-lang.org>) to execute the cargo command.  You must also have *openssl* installed
-for the build to be successful: on Debian based systems,
-`sudo apt install openssl-dev`.
+The program was written in Rust and should be installed as an executable: **`cargo install lambdascript`**. You must have Rust installed (from <https://rust-lang.org>) to execute the cargo command.
 
 The program can read from a script or interactively read from stdin. Expressions and defintions are separated by ; (semicolon).  Here's an example of reading and evaluating from stdin, which can be initiated by running the executable.
 
