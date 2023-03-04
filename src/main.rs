@@ -50,7 +50,7 @@ fn main() {
         let res2 = std::io::stdin().read_line(&mut buf);
         let bln = buf.len();
         let buftrim = buf.trim();
-        if bln < 3 {
+        if bln < 2 {
             continue;
         } else if buftrim == "exit" || buftrim == "quit" {
             break;
