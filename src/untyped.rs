@@ -105,7 +105,7 @@ impl BetaReducer {
     pub fn newvar(&mut self, x: &str16) -> str16 {
         self.cx += 1;
         let xs = format!("{}{}", x, self.cx);
-        return str16::from(xs);
+        return str16::from(&xs);
     }
 
     // alpha-convert t apart from free vars in alpha-map.
