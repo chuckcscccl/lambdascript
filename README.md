@@ -9,7 +9,7 @@ are illustrational or educational in nature:
   is given [here](https://cs.hofstra.edu/~cscccl/rustlr_project/lambdascript/untyped.grammar).
 
   2. For introductory level students in a programming languages class, the
-  tools shows every step of beta reduction, including alpha-conversions where
+  tools show every step of beta reduction, including alpha-conversions where
   necessary, in reducing a term to normal form.  It includes both full
   beta-normalization using the normal order (call-by-name) strategy as well
   as weak normalization using call-by-value.  Definitions can be given
@@ -88,6 +88,3 @@ At the `<<<` prompt the following special directives can be given:
 
 -----------------------------
 
-As this tool is used actively in the classroom, each release will have
-a **limited lifetime**: after a certain period it will cease to work until
-a new version is released.
