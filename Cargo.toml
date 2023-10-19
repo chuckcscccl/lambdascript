@@ -1,6 +1,6 @@
 [package]
 name = "lambdascript"
-version = "0.1.55"
+version = "0.1.56"
 authors = ["Chuck Liang"]
 edition = "2021"
 license = "MIT"
@@ -11,7 +11,7 @@ categories = ["command-line-utilities", "parsing", "mathematics"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rustlr = "0.4"
-fixedstr = "0.5"
+rustlr = { version = "0.5", default-features = false }
+fixedstr = { version = "0.5", features = ["no-alloc"] }
 #chrono = "0.4"
 #curl = "0.4.44"
