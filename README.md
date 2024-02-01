@@ -18,7 +18,8 @@ are illustrational or educational in nature:
 
   3. For more advanced students, the source code of the program demonstrates
   how lambda terms can be represented in abstract syntax and how
-  reductions can be implemented.
+  reductions can be implemented.  The typing module demontrates the
+  how types can be inferred using the unification algorithm.
 
 ### Usage
 The program was written in Rust and should be installed as an executable: **`cargo install lambdascript`**. You must have Rust installed (from <https://rust-lang.org>) to execute the cargo command.
@@ -92,7 +93,8 @@ combinators.
 At the `<<<` prompt the following special directives can be given:
 
   * `exit` or `quit` : exits the program
-  * `typed` : switch to typed mode
+  * `typed` : switch to typed mode: types will be inferred and untypable
+    terms will not be reduced.
   * `untyped` : switch to untyped mode
   * `use lambda` or `use lam` or `use Lam` or `use \`: On some systems,
     the Greek character λ (unicode 0x03BB) may fail to display properly.
