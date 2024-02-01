@@ -1,6 +1,6 @@
 [package]
 name = "lambdascript"
-version = "0.1.56"
+version = "0.2.0"
 authors = ["Chuck Liang"]
 edition = "2021"
 license = "MIT"
@@ -13,5 +13,6 @@ categories = ["command-line-utilities", "parsing", "mathematics"]
 [dependencies]
 rustlr = { version = "0.5", default-features = false }
 fixedstr = { version = "0.5", features = ["no-alloc"] }
+#fixedstr = { path = "../fixedstr", features = ["no-alloc"] }
 #chrono = "0.4"
 #curl = "0.4.44"

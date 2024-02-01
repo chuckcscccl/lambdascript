@@ -20,21 +20,31 @@ use untyped::*;
 mod untypedparser;
 use untypedparser::*;
 
+mod typed;
+use typed::*;
+
 fn main() {
-    println!("Beta-Reducer for Untyped Lambda Calculus, by Chuck Liang.");
-    println!("For educational reasons this program may be temporarily disabled during certain time periods");
+    println!("Beta-Reducer for Lambda Calculus, by Chuck Liang.");
+    //println!("For educational reasons this program may be temporarily disabled during certain time periods");
     //if !lambda_formal() {    return;    }
     let mut parser = make_parser();
     let ref mut defs = HashMap::<str16, Term>::new();
+    let mut reducer = BetaReducer::new();
     let args: Vec<String> = std::env::args().collect(); // command-line args
-    if args.len() > 1 {
-        let srcfile = &args[1];
+    let mut srcindex = 1;
+    if args.len()>1 && &args[1]=="typed" {
+      reducer.settyped(true);
+      //println!("THE TYPE INFERENCE FEATURE IS CURRENTLY EXPERIMENTAL");      
+      srcindex = 2;
+    }
+    if args.len() > srcindex {
+        let srcfile = &args[srcindex];
         let source = LexSource::new(srcfile).unwrap();
         //    let mut lexer = LamLexer::new(StrTokenizer::from_source(&source));
         let mut lexer = untypedlexer::from_source(&source);
         parser.parse(&mut lexer);
         //parser.parse_train(&mut lexer,"src/untypedparser.rs");
-        eval_prog(&parser.exstate, defs);
+        eval_prog(&parser.exstate, defs, &mut reducer);
         if parser.error_occurred() {
             println!("\nPARSER ERRORS OCCURRED, RESULTS NOT GUARANTEED");
         }
@@ -55,7 +65,24 @@ fn main() {
         } else if buftrim == "exit" || buftrim == "quit" {
             break;
         }
-
+        else if buftrim == "typed" {
+          reducer.settyped(true);
+          println!("THE TYPE INFERENCE FEATURE IS CURRENTLY EXPERIMENTAL");
+          continue;
+        }
+        else if buftrim == "untyped" {
+          reducer.settyped(false);
+          continue;
+        }
+   else if buftrim=="use lambda" {reducer.setlambda("lambda "); continue;}
+    else if buftrim=="use lam" {reducer.setlambda("lam "); continue;}
+    else if buftrim=="use Lam" {reducer.setlambda("Lam "); continue;}
+    else if buftrim=="use \\" {reducer.setlambda("\\"); continue;}        
+    else if buftrim=="use greek" || buftrim=="use unicode" {reducer.setlambda("\u{03bb}"); continue;}
+    else if buftrim=="trace off" {reducer.set_trace(1); continue;}
+    else if buftrim=="trace max" || buftrim=="trace on" {reducer.set_trace(5); continue;}
+    else if buftrim=="trace medium" {reducer.set_trace(2); continue;}
+    
         if !buftrim.ends_with(';') {
             buf = format!("{};", buftrim);
         }
@@ -66,6 +93,6 @@ fn main() {
         //parser.parse_train(&mut lexer,"src/untypedparser.rs");
         //println!("exstate: {:?}",&parser.exstate);
 
-        eval_prog(&parser.exstate, defs);
+        eval_prog(&parser.exstate, defs, &mut reducer);
     } // repl
 } //main

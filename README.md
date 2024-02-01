@@ -1,7 +1,8 @@
 ## Lambdascript
 
-**Lambdascript** executes beta-reduction steps on untyped lambda
-terms.  It is not a high-performance implementation of lambda
+**Lambdascript** executes beta-reduction steps on terms of the lambda calculus,
+with the option of inferring polymorphic types before reduction.
+It is not a high-performance implementation of lambda
 calculus. Rather, the tool serves three primary purposes, all of which
 are illustrational or educational in nature:
 
@@ -34,8 +35,9 @@ the left and application binds tighter than abstraction, meaning that the
 scope of a λ extends to the right as far as possible unless bounded by
 parentheses.  Lambda expressions inside applications must always by bound
 by parentheses: so `x lambda y.y` should be replaced with `x (lambda y.y)`.
+There is no notation for types in terms: types are inferred for terms.
 
-Given a file [simple.ls](https://cs.hofstra.edu/~cscccl/rustlr_project/lambdascript/simple.ls) with the following contents:
+Given a file `simple.ls` with the following contents:
 ```
 define I = lambda x.x;
 define K = lambda x.lambda y.x;
@@ -61,6 +63,22 @@ definition of `INFINITY`.  Full, normal-order evaluation and weak
 call-by-value are the only reduction strategies implemented in
 lambdascript.
 
+Given a file `simpletyped.ls` with the following contents:
+```
+define I = lambda x.x;
+define K = lambda x.lambda y.x;
+define S = lambda x.lambda y.lambda z.x z (y z);
+define SKI = S K I;
+```
+**lambdascript typed simpletyped.ls** produces the following output:
+```
+THE INFERRED TYPE OF I IS  Π(a -> a)
+THE INFERRED TYPE OF K IS  Π(a -> b -> a)
+THE INFERRED TYPE OF S IS  Π((h -> f -> g) -> (h -> f) -> h -> g)
+THE INFERRED TYPE OF SKI IS  Π(r -> r)
+```
+where `Π` represents quantification over type variables.
+
 All variables and identifiers are limited to a length of 15 characters.
 
 After a script is executed, the interpreter automatically enters interactive
@@ -73,7 +91,9 @@ combinators.
 
 At the `<<<` prompt the following special directives can be given:
 
-  * `exit` or `quit`: exits the program
+  * `exit` or `quit` : exits the program
+  * `typed` : switch to typed mode
+  * `untyped` : switch to untyped mode
   * `use lambda` or `use lam` or `use Lam` or `use \`: On some systems,
     the Greek character λ (unicode 0x03BB) may fail to display properly.
     To change the symbol displayed for lambda, you can choose between one
