@@ -85,7 +85,7 @@ All variables and identifiers are limited to a length of 15 characters.
 After a script is executed, the interpreter automatically enters interactive
 mode with the definitions from the script still available.
 
-The file **[pure.ls](https://cs.hofstra.edu/~cscccl/rustlr_project/lambdascript/pure.ls)** contains a full list of definitions of well-known lambda-calculus
+The file **[pure.ls](https://cs.hofstra.edu/~cscccl/rustlr_project/lambdascript/pure.ls)** contains a full list of definitions of well-known (untyped) lambda-calculus
 combinators.
 
 #### Interactive Interpreter Directives
