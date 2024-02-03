@@ -99,8 +99,7 @@ applications must always by bound by parentheses: so `x lambda y.y`
 should be replaced with `x (lambda y.y)`. Defintions and terms to be
 evaluated in a script must be separated by ; (semicolon).  All
 variables and identifiers are limited to a length of 15 characters.
-Lambdascript can also be executed without a script file, entering into
-the interactive mode without any definitions.
+
 
 The file
 **[pure.ls](https://cs.hofstra.edu/~cscccl/rustlr_project/lambdascript/pure.ls)**
