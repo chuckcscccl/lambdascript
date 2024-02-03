@@ -18,75 +18,95 @@ are illustrational or educational in nature:
 
   3. For more advanced students, the source code of the program demonstrates
   how lambda terms can be represented in abstract syntax and how
-  reductions can be implemented.  The typing module demontrates the
+  reductions can be implemented.  The typing module demonstrates
   how types can be inferred using the unification algorithm.
 
 ### Usage
 The program was written in Rust and should be installed as an executable: **`cargo install lambdascript`**. You must have Rust installed (from <https://rust-lang.org>) to execute the cargo command.
 
-The program can read from a script or interactively read from stdin. Expressions and defintions are separated by ; (semicolon).  Here's an example of reading and evaluating from stdin, which can be initiated by running the executable.
-
-```
-<<< (lambda x.x (lambda y.x y)) y;
-(λx.x (λy.x y)) y
- =>  y (λy1.y y1)
-```
-Lambdascript uses standard syntax for lambda terms: application associates to
-the left and application binds tighter than abstraction, meaning that the
-scope of a λ extends to the right as far as possible unless bounded by
-parentheses.  Lambda expressions inside applications must always by bound
-by parentheses: so `x lambda y.y` should be replaced with `x (lambda y.y)`.
-There is no notation for types in terms: types are inferred for terms.
-
+The program can read from a script, or interactively from stdin.
+By default, terms are evaluated in the untyped mode.
 Given a file `simple.ls` with the following contents:
 ```
 define I = lambda x.x;
 define K = lambda x.lambda y.x;
-define lazy INFINITY = (lambda x.x x) (lambda x.x x);
-
-K I INFINITY x;
-```
-**`lambdascript simple.ls`** produces the following output:
-```
-K I INFINITY x
-= (λxλy.x) I INFINITY x
- =>  (λy.I) INFINITY x
-= (λyλx.x) INFINITY x
- =>  (λx.x) x
- =>  x
-```
-The reduction terminated because normal-order (call-by-name)
-evaluation is applied by default.  If the the last line of the file
-was replaced with `weak (K I INFINITY x)`, then weak reduction using
-call-by-value will take place, resulting in an infinite loop.  There
-will likewise be an infinite loop if `lazy` was missing from the
-definition of `INFINITY`.  Full, normal-order evaluation and weak
-call-by-value are the only reduction strategies implemented in
-lambdascript.
-
-Given a file `simpletyped.ls` with the following contents:
-```
-define I = lambda x.x;
-define K = lambda x.lambda y.x;
 define S = lambda x.lambda y.lambda z.x z (y z);
-define SKI = S K I;
+define lazy INFINITY = (lambda x.x x) (lambda x.x x);
+lambda y.K y INFINITY;
 ```
-**lambdascript typed simpletyped.ls** produces the following output:
+**`lambdascript untyped simple.ls`** evaluates the input as a script.
+The 'untyped' directive is optional since it's the default.  It then enters
+interactive mode with the definitions still loaded.  Without the optional
+file name, lambda script will just start in interactive mode.
+Here is a sample session from executing `simple.ls`:
 ```
-THE INFERRED TYPE OF I IS  Π(a -> a)
-THE INFERRED TYPE OF K IS  Π(a -> b -> a)
-THE INFERRED TYPE OF S IS  Π((h -> f -> g) -> (h -> f) -> h -> g)
-THE INFERRED TYPE OF SKI IS  Π(r -> r)
+λy.K y INFINITY
+= λy.(λxλy.x) y INFINITY
+ < alpha conversion of y to y1 >
+ =>  λy.(λy1.y) INFINITY
+= λy.(λy1.y) ((λx.x x) (λx.x x))
+ =>  λy.y
+
+Entering interactive mode, enter 'exit' to quit...
+<<< typed
+TERMS DEFINED IN THE UNTYPED MODE WILL NOW BE TYPE-CHECKED BEFORE EVALUATION    
+<<< K I INFINITY
+TYPE INFERENCE FOR <K I INFINITY> FAILED : UNTYPABLE
+EVALUATION CANCELED
+<<< I I
+THE INFERRED TYPE OF <I I> IS e -> e
+I I
+= (λx.x) I
+ =>  I
+= λx.x
 ```
-where `Π` represents quantification over type variables.
+The reduction terminated in the untyped mode because normal-order
+(call-by-name) evaluation is applied by default.  If the the last line
+of the file was replaced with `weak (K I INFINITY x)`, then weak
+reduction using call-by-value will take place, resulting in an
+infinite loop.  There will likewise be an infinite loop if `lazy` was
+missing from the definition of `INFINITY`.  Full, normal-order
+evaluation and weak call-by-value are the only reduction strategies
+implemented in lambdascript.
 
-All variables and identifiers are limited to a length of 15 characters.
+One can switch from typed to untyped mode with the `typed` directive.
+There is no syntax for types in terms.  Most general types are always
+inferred.  Undefined free variables are not considered typable. Notice
+that `I I` is well-typed because the type *scheme* inferred for `I` can
+be instantiated twice.  One can also execute the script directly in the
+typed mode. **`lambdascript typed simple.ls`** will show the types
+inferred for all definitions:
+```
+THE INFERRED TYPE OF I IS: Π(a -> a)
+THE INFERRED TYPE OF K IS: Π(a -> b -> a)
+THE INFERRED TYPE OF S IS: Π((h -> f -> g) -> (h -> f) -> h -> g)
+TYPE INFERENCE FOR <(λx.x x) (λx.x x)> FAILED : UNTYPABLE
+DEFINITION OF INFINITY NOT ACCEPTED
+In the typed mode, the undefined free variable INFINITY cannot be typed
+TYPE INFERENCE FOR <λy.K y INFINITY> FAILED : e -> UNTYPABLE
+EVALUATION CANCELED
+```
+Here, `Π` quantifies all type variables in its scope.
 
-After a script is executed, the interpreter automatically enters interactive
-mode with the definitions from the script still available.
+Types are always inferred *before* beta-reduction, so it can be called
+*static* typing.
 
-The file **[pure.ls](https://cs.hofstra.edu/~cscccl/rustlr_project/lambdascript/pure.ls)** contains a full list of definitions of well-known (untyped) lambda-calculus
-combinators.
+Lambdascript uses standard syntax for lambda terms: application
+associates to the left and application binds tighter than abstraction,
+meaning that the scope of a λ extends to the right as far as possible
+unless bounded by parentheses.  However, lambda expressions inside
+applications must always by bound by parentheses: so `x lambda y.y`
+should be replaced with `x (lambda y.y)`. Defintions and terms to be
+evaluated in a script must be separated by ; (semicolon).  All
+variables and identifiers are limited to a length of 15 characters.
+Lambdascript can also be executed without a script file, entering into
+the interactive mode without any definitions.
+
+The file
+**[pure.ls](https://cs.hofstra.edu/~cscccl/rustlr_project/lambdascript/pure.ls)**
+contains a full list of definitions of well-known (untyped)
+lambda-calculus combinators.
+
 
 #### Interactive Interpreter Directives
 
@@ -96,7 +116,7 @@ At the `<<<` prompt the following special directives can be given:
   * `typed` : switch to typed mode: types will be inferred and untypable
     terms will not be reduced.
   * `untyped` : switch to untyped mode
-  * `use lambda` or `use lam` or `use Lam` or `use \`: On some systems,
+  * `use lambda` or `use lam` or `use Lam` or `use \` : On some systems,
     the Greek character λ (unicode 0x03BB) may fail to display properly.
     To change the symbol displayed for lambda, you can choose between one
     of four alternatives (the choices are limited to these four because the

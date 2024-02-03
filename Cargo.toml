@@ -1,10 +1,10 @@
 [package]
 name = "lambdascript"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Chuck Liang"]
 edition = "2021"
 license = "MIT"
-description = "Educational tool illustrating beta reduction of untyped lambda terms, parser generation"
+description = "Educational tool illustrating beta reduction of typed and untyped lambda terms, parser generation"
 repository = "https://github.com/chuckcscccl/lambdascript/"
 keywords = ["lambda-calculus", "lambda", "beta-reduction", "education"]
 categories = ["command-line-utilities", "parsing", "mathematics"]

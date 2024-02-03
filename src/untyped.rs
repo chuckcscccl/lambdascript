@@ -104,13 +104,15 @@ pub struct BetaReducer {
     trace: u8,
     typed: bool,
     lamsym: &'static str,
-    symtab: SymbolTable,
+    pub symtab: SymbolTable,
+    pub defs: HashMap<str16,Term>, // global definitions
 }
 impl BetaReducer {
     pub fn new() -> BetaReducer {
         BetaReducer {
           cx: 0, trace: 0, typed:false, lamsym:lowerlam,
           symtab:SymbolTable::default(),
+          defs: HashMap::new(),
         }
     }
 
@@ -201,11 +203,11 @@ impl BetaReducer {
 
     // 1-step beta reduction, normal order, returns true if reduction occurred
     // expands defs only when necessary.  MOST CRUCIAL FUNCTION
-    pub fn beta1(&mut self, t: &mut Term, defs: &HashMap<str16, Term>) -> bool {
+    pub fn beta1(&mut self, t: &mut Term) -> bool {
         match t {
             App(A, B) => {
                 while let Var(id) = &mut **A {
-                    if let Some(iddef) = defs.get(id) {
+                    if let Some(iddef) = self.defs.get(id) {
                         //println!("= ({}) {}",iddef.format(self.lamsym),unbox!(B).format(self.lamsym));
                         let mut def2 = iddef.clone();
                         swap(&mut **A, &mut def2);
@@ -221,24 +223,24 @@ impl BetaReducer {
                 }
                 //redex
                 else {
-                    self.beta1(A, defs) || self.beta1(B, defs)
+                    self.beta1(A) || self.beta1(B)
                 }
             } //app case
-            Abs(x, B) => self.beta1(B, defs),
+            Abs(x, B) => self.beta1(B),
             _ => false,
         } //match
     } //beta1
 
-    pub fn reduce_to_norm(&mut self, t: &mut Term, defs: &HashMap<str16, Term>) {
+    pub fn reduce_to_norm(&mut self, t: &mut Term) {
         if self.trace > 0 {
             println!("{}", t.format(self.lamsym));
         }
         let mut reducible = true;
         while reducible {
-            if self.trace > 0 && expand(t, defs) {
+            if self.trace > 0 && expand(t,&self.defs) {
                 println!("= {}", t.format(self.lamsym));
             }
-            reducible = self.beta1(t, defs);
+            reducible = self.beta1(t);
             if reducible && self.trace > 0 {
                 println!(" =>  {}", t.format(self.lamsym));
             }
@@ -246,34 +248,32 @@ impl BetaReducer {
     } // reduce to beta normal form (strong norm via CBN)
 
     // weak head reduction, CBV
-    pub fn weak_beta(&mut self, t: &Term, defs: &HashMap<str16, Term>) {
+    pub fn weak_beta(&mut self, t: &Term) {
         if self.trace > 0 {
             println!("weak {}", t.format(self.lamsym));
         }
         let mut t2 = t.clone();
-        while expand(&mut t2, &defs) {
+        while expand(&mut t2,&self.defs) {
             if self.trace > 0 {
                 println!("= {}", t2.format(self.lamsym));
             }
         }
-        while self.weak_beta1(&mut t2, defs) {
+        while self.weak_beta1(&mut t2) {
             if self.trace > 0 {
                 println!(" =>  {}", t2.format(self.lamsym));
             }
         }
     } //weak_beta
-    fn weak_beta1(&mut self, t: &mut Term, defs: &HashMap<str16, Term>) -> bool {
+    fn weak_beta1(&mut self, t: &mut Term) -> bool {
         match t {
             App(a, b) => {
                 if let Abs(x, body) = &**a {
-                    // reduce b first:
-                    self.weak_beta1(b, defs) || self.beta1(t, defs)
-                //        let wt =self.weak_beta(t,defs); // do it again
-                //        wb || bt || wt
+                    // reduce b first (call by value)
+                    self.weak_beta1(b) || self.beta1(t)
                 }
                 //redex found
                 else {
-                    self.weak_beta1(a, defs)
+                    self.weak_beta1(a)
                 }
             }
             _ => false,
@@ -311,75 +311,74 @@ fn expand(t: &mut Term, defs: &HashMap<str16, Term>) -> bool {
         App(a, b) => expand(a, defs) || expand(b, defs),
         Abs(x, a) => {
             if let Some(xdef) = defs.get(x) {
-                panic!("BOUND VARIABLE {} CONFLICTS WITH GLOBAL DEFINITION", x);
+                //panic!("BOUND VARIABLE {} CONFLICTS WITH GLOBAL DEFINITION", x);               println!("WARNING: bound variable {} conflicts with global definition",x);
+                false
             }
-            expand(a, defs)
+            else {expand(a, defs)}
         }
         _ => false,
     } //match
 } //expand , returns true if something was expanded
 
-pub fn eval_prog(prog: &Vec<LBox<Term>>, defs: &mut HashMap<str16, Term>, reducer:&mut BetaReducer) {
-    //let mut reducer = BetaReducer::new();
+// top level eval function: processes definitions
+pub fn eval_prog(prog: &Vec<LBox<Term>>, reducer:&mut BetaReducer) {
     reducer.cx = 0; // resets index for var names
     //reducer.symtab.reset_index();
-    //let mut defs = HashMap::<str16,Term>::new();
     for line in prog {
         reducer.symtab.reset_index();    
         match &**line {
             Def(weak, x, xdef) => {
                 if reducer.typed {
-                  let stype = xdef.type_infer(&mut reducer.symtab);
+                  let stype = xdef.type_infer(reducer);
                   //if let Lstype::Untypable = statictype {
                   if stype.format().contains("UNTYPABLE") {
-                    println!("THE TERM < {} > IS NOT WELL-TYPED : {}\nEVALUATION CANCELED",xdef.format(reducer.lamsym), stype.format());
+                    println!("TYPE INFERENCE FOR <{}> FAILED : {}\nDEFINITION OF {} NOT ACCEPTED",xdef.format(reducer.lamsym), stype.format(),x);
                     continue;
                   } else {
                     let statictype = Lstype::PI(Box::new(stype));
-                    println!("THE INFERRED TYPE OF {} IS  {}",x,statictype.format());
-                    reducer.symtab.add(*x,statictype);
+                    println!("THE INFERRED TYPE OF {} IS: {}",x,statictype.format());
+                    reducer.symtab.add_def(*x,statictype);
                   }
                 }//if typed
                 let mut xdef2 = unbox!(xdef).clone(); //*xdef.exp.clone();
                 if *weak {
                     reducer.trace = 0;
                     reducer.cx = 0;
-                    reducer.reduce_to_norm(&mut xdef2, defs);
-                    //reducer.weak_beta(&mut xdef2,defs);
+                    reducer.reduce_to_norm(&mut xdef2);
                 }
-                defs.insert(*x, xdef2);
+                reducer.defs.insert(*x, xdef2);
             }
             Weak(t) => {
 
                 if reducer.typed {
-                  let statictype = t.type_infer(&mut reducer.symtab);
+                  let statictype = t.type_infer(reducer);
                   if statictype.format().contains("UNTYPABLE") {
-                    println!("THE TERM < {} > IS NOT WELL-TYPED : {}\nEVALUATION CANCELED",t.format(reducer.lamsym), statictype.format());
+                    println!("TYPE INFERENCE FOR <{}> FAILED : {}\nEVALUATION CANCELED",t.format(reducer.lamsym), statictype.format());
                     continue;
                   } else {
-                    println!("THE INFERRED TYPE OF THIS TERM IS  {}",statictype.format());
+                    println!("THE INFERRED TYPE OF {} IS  {}",t.format(reducer.lamsym),statictype.format());
                   }
                 }//if typed
                 reducer.trace = 1;
                 reducer.cx = 0;
-                reducer.weak_beta(t, defs);
+                reducer.weak_beta(t);
                 println!();
             }
             t => {
                 if reducer.typed {
-                  let statictype = t.type_infer(&mut reducer.symtab);
+                  let statictype = t.type_infer(reducer);
                   if statictype.format().contains("UNTYPABLE") {
-                    println!("THE TERM < {} > IS NOT WELL-TYPED : {}\nEVALUATION CANCELED",t.format(reducer.lamsym), statictype.format());
+                    println!("TYPE INFERENCE FOR <{}> FAILED : {}\nEVALUATION CANCELED",t.format(reducer.lamsym), statictype.format());
                     continue;
                   } else {
-                    println!("THE INFERRED TYPE OF THIS TERM IS  {} ",statictype.format());
+                    println!("THE INFERRED TYPE OF <{}> IS {} ",t.format(reducer.lamsym),statictype.format());
                   }
                 }//if typed
  
                 reducer.trace = 1;
                 reducer.cx = 0;
                 let ref mut t2 = t.clone();
-                reducer.reduce_to_norm(t2, defs);
+                reducer.reduce_to_norm(t2);
                 println!();
             }
             //       _ => {

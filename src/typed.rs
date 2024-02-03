@@ -11,7 +11,7 @@ extern crate fixedstr;
 use fixedstr::{str16};
 use rustlr::{unbox, LBox, LexSource, RawToken, StrTokenizer, TerminalToken, Tokenizer};
 use std::collections::{HashMap, HashSet, BTreeMap, BTreeSet};
-use crate::untyped::Term;
+use crate::untyped::{Term,BetaReducer};
 
 #[derive(Clone,Debug,PartialEq,Eq,Hash)]
 pub enum Lstype {  // lambda script type
@@ -105,7 +105,13 @@ impl Lstype
           format!("({}) -> {}",&fa, &fb)
         }
       },
-      PI(t) => format!("{}({})", PISYM, t.format())
+      PI(t) => {
+        match &**t {
+          Tconst(s) => s.to_string(),
+          Untypable => String::from("UNTYPABLE"),
+          _ => format!("{}({})", PISYM, t.format())
+        }//submatch for PI case
+      }
     }//match
   }//format
 
@@ -177,6 +183,7 @@ fn unify_types(equations:&mut Equations) -> Option<HashMap<u16,Lstype>>
 #[derive(Default,Debug)]
 pub struct SymbolTable {
   stack : Vec<(str16,Lstype)>,
+  bp    : usize, // stack base index (for global defs)
   index : u16, // for naming type variables
 }
 impl SymbolTable {
@@ -190,8 +197,13 @@ impl SymbolTable {
   fn set_index(&mut self, i:u16) {
     self.index = i;
   }
-  pub fn add(&mut self, varname:str16, ty:Lstype) {
+  pub fn add_def(&mut self, varname:str16, ty:Lstype) {
     self.stack.push((varname,ty));
+    self.bp = self.stack.len();
+  }
+  pub fn insert_def(&mut self, varname:str16, ty:Lstype) {
+    self.stack.insert(0,(varname,ty));
+    self.bp += 1;
   }
   fn lookup(&self, x:&str16) -> Option<usize> { // returns index found
     let mut i = self.stack.len();
@@ -221,43 +233,52 @@ impl SymbolTable {
 
 impl Term
 {
-  pub fn type_infer(&self, symtab:&mut SymbolTable) -> Lstype
+  pub fn type_infer(&self, reducer:&mut BetaReducer) -> Lstype
   {
-    let stack_bp = symtab.stack.len();
-    let answer = self.infer_type(symtab);
-    symtab.stack.truncate(stack_bp);
+    let stack_len = reducer.symtab.stack.len();
+    let answer = self.infer_type(reducer);
+    reducer.symtab.stack.truncate(stack_len);
     answer
-  }
+  } // BetaReducer also contains the type symbol table + global definitions
 
-  fn infer_type(&self, symtab:&mut SymbolTable) -> Lstype
+  fn infer_type(&self, reducer:&mut BetaReducer) -> Lstype
   { use Term::*;
     let mut answer = Untypable;
     match &self {
       Var(x) => {
-        if let Some(xi) = symtab.lookup(x) {
-            answer = symtab.stack[xi].1.clone();
+        if let Some(xi) = reducer.symtab.lookup(x) {
+            answer = reducer.symtab.stack[xi].1.clone();
             if let PI(_) = answer {
-              answer = answer.fresh(symtab);
+              answer = answer.fresh(&mut reducer.symtab);
             }
         }
-        else {
-            let ti = symtab.newtvar();
-            symtab.stack.push((*x,Tvar(ti)));
-            answer = Tvar(ti);        
+        else if let Some(def) = reducer.defs.get(x) { // global definition
+          let defclone = def.clone();
+          answer = PI(bx(defclone.infer_type(reducer)));
+          reducer.symtab.insert_def(*x,answer.clone());
+          answer = answer.fresh(&mut reducer.symtab);
+          // this case applies only if switching from untyped to typed mode
+        }
+        else { // free variable - undefined
+            //let ti = symtab.newtvar();
+            //symtab.stack.push((*x,Tvar(ti)));
+            //answer = Tvar(ti);        
+            
+            println!("In the typed mode, the undefined free variable {} cannot be typed",x);
         }
       },
       Abs(x,m) => {
-        let ti = symtab.newtvar();
-        let xpos = symtab.stack.len();
-        symtab.stack.push((*x,Tvar(ti)));
-        let tm = m.infer_type(symtab);
-        //if &tm != &Untypable {
-          let tx = Var(*x).infer_type(symtab); // type may have changed
+        let ti = reducer.symtab.newtvar();
+        let xpos = reducer.symtab.stack.len();
+        reducer.symtab.stack.push((*x,Tvar(ti)));
+        let tm = m.infer_type(reducer);
+        //if &tm != &Untypable { 
+          let tx = Var(*x).infer_type(reducer); // type may have changed
           //if &tx != &Untypable {
-            symtab.stack[xpos].1 = Untypable; // mark position as invalid
-            let mut i = symtab.stack.len();
-            while i>0 && &symtab.stack[i-1].1==&Untypable {
-              symtab.stack.pop();
+            reducer.symtab.stack[xpos].1 = Untypable; //mark position as invalid
+            let mut i = reducer.symtab.stack.len();
+            while i>0 && &reducer.symtab.stack[i-1].1==&Untypable {
+              reducer.symtab.stack.pop();
               i -= 1;
             }
             answer = Tarrow(bx(tx),bx(tm));
@@ -265,18 +286,18 @@ impl Term
         //}
       },
       App(s,t) => {
-        let ts = s.infer_type(symtab);
+        let ts = s.infer_type(reducer);
         // unify with new type
-        let ds = symtab.newtvar();
-        let cs = symtab.newtvar();
+        let ds = reducer.symtab.newtvar();
+        let cs = reducer.symtab.newtvar();
         let ts2 = Tarrow(bx(Tvar(ds)),bx(Tvar(cs)));
-        let tt = t.infer_type(symtab);
+        let tt = t.infer_type(reducer);
         //println!("type of tt: {:?}", &tt);
         //if &tt==&Untypable { return answer; }
         let mut type_equations = vec![(ts,ts2), (tt,Tvar(ds))];
         let mut unifyresult = unify_types(&mut type_equations);
         if let Some(mut unifier) = unifyresult {
-          symtab.apply_unifier(&unifier);
+          reducer.symtab.apply_unifier(&unifier);
           if let Some(ttype) = unifier.remove(&cs) {
             answer = ttype;
           }
@@ -286,16 +307,17 @@ impl Term
         }
         // but how are types in the symbol table affected?
         // types ts, tt should also be affected by the unification.
-        // must apply the unifier to the symtab.stack
+        // must apply the unifier to the reducer.symtab.stack
       },
       Const(_) => { answer = Tconst(str16::from("int")); },
       Def(_,n,t) => {
-        answer = t.infer_type(symtab);
-        symtab.stack.push((*n,answer.clone()));
+        answer = t.infer_type(reducer);
+        reducer.symtab.stack.push((*n,answer.clone()));
+        reducer.symtab.bp = reducer.symtab.stack.len();
       },
-      Weak(t) | CBV(t) => { answer = t.infer_type(symtab); },
+      Weak(t) | CBV(t) => { answer = t.infer_type(reducer); },
       Seq(ts) => {
-        for t in ts { answer = t.infer_type(symtab); }
+        for t in ts { answer = t.infer_type(reducer); }
       },
       _ => {},
     }// match

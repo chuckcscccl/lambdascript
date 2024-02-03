@@ -28,14 +28,17 @@ fn main() {
     //println!("For educational reasons this program may be temporarily disabled during certain time periods");
     //if !lambda_formal() {    return;    }
     let mut parser = make_parser();
-    let ref mut defs = HashMap::<str16, Term>::new();
+    //let ref mut defs = HashMap::<str16, Term>::new(); //in reducer now
     let mut reducer = BetaReducer::new();
     let args: Vec<String> = std::env::args().collect(); // command-line args
     let mut srcindex = 1;
     if args.len()>1 && &args[1]=="typed" {
       reducer.settyped(true);
-      //println!("THE TYPE INFERENCE FEATURE IS CURRENTLY EXPERIMENTAL");      
       srcindex = 2;
+    }
+    else if args.len()>1 && &args[1]=="untyped" {
+      reducer.settyped(false);
+      srcindex = 2;    
     }
     if args.len() > srcindex {
         let srcfile = &args[srcindex];
@@ -44,9 +47,9 @@ fn main() {
         let mut lexer = untypedlexer::from_source(&source);
         parser.parse(&mut lexer);
         //parser.parse_train(&mut lexer,"src/untypedparser.rs");
-        eval_prog(&parser.exstate, defs, &mut reducer);
+        eval_prog(&parser.exstate, &mut reducer);
         if parser.error_occurred() {
-            println!("\nPARSER ERRORS OCCURRED, RESULTS NOT GUARANTEED");
+            println!("\nPARSING ERRORS OCCURRED, RESULTS NOT GUARANTEED");
         }
         //return;
     } // source file indicated
@@ -67,7 +70,7 @@ fn main() {
         }
         else if buftrim == "typed" {
           reducer.settyped(true);
-          println!("THE TYPE INFERENCE FEATURE IS CURRENTLY EXPERIMENTAL");
+          println!("TERMS DEFINED IN THE UNTYPED MODE WILL NOW BE TYPE-CHECKED BEFORE EVALUATION");
           continue;
         }
         else if buftrim == "untyped" {
@@ -93,6 +96,6 @@ fn main() {
         //parser.parse_train(&mut lexer,"src/untypedparser.rs");
         //println!("exstate: {:?}",&parser.exstate);
 
-        eval_prog(&parser.exstate, defs, &mut reducer);
+        eval_prog(&parser.exstate, &mut reducer);
     } // repl
 } //main
