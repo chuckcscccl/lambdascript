@@ -329,8 +329,13 @@ pub fn eval_prog(prog: &Vec<LBox<Term>>, reducer:&mut BetaReducer) {
         match &**line {
             Def(weak, x, xdef) => {
                 if reducer.typed {
-                  let stype = xdef.type_infer(reducer);
-                  //if let Lstype::Untypable = statictype {
+		  let stype;
+		  if x=="FIX" {
+		    stype = Lstype::fixpttype();
+		  }
+		  else {
+                    stype = xdef.type_infer(reducer);
+		  }
                   if stype.format().contains("UNTYPABLE") {
                     println!("TYPE INFERENCE FOR <{}> FAILED : {}\nDEFINITION OF {} NOT ACCEPTED",xdef.format(reducer.lamsym), stype.format(),x);
                     continue;

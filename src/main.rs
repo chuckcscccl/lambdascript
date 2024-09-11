@@ -24,11 +24,10 @@ mod typed;
 use typed::*;
 
 fn main() {
-    println!("Beta-Reducer for Lambda Calculus, by Chuck Liang.");
+    println!("Beta-Reducer for Lambda Calculus.\nCopyright (c) 2022 Chuck Liang. Free to use under MIT license.");
     //println!("For educational reasons this program may be temporarily disabled during certain time periods");
     //if !lambda_formal() {    return;    }
     let mut parser = make_parser();
-    //let ref mut defs = HashMap::<str16, Term>::new(); //in reducer now
     let mut reducer = BetaReducer::new();
     let args: Vec<String> = std::env::args().collect(); // command-line args
     let mut srcindex = 1;

@@ -42,6 +42,12 @@ impl Lstype
     }//match
   }//collect_tvars
 
+  // special type (a -> a) -> a for fixedpoint operator
+  pub fn fixpttype() -> Lstype {
+    let ara = Tarrow(Box::new(Tvar(1)), Box::new(Tvar(1)));
+    Tarrow(Box::new(ara),Box::new(Tvar(1)))
+  }
+
   fn fresh(&self, symtab:&mut SymbolTable) -> Lstype {
     if let PI(ty) = self {
        let mut freshtype = (&**ty).clone();

@@ -129,3 +129,8 @@ At the `<<<` prompt the following special directives can be given:
 
 -----------------------------
 
+#### Recent Updates:
+
+Version 0.2.2 rigged the type of the FIX operator to *(a -> a) -> a* in typed mode.
+
+Version 0.2.0 introduced the typed option.
