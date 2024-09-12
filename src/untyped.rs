@@ -22,6 +22,8 @@ const lowerlam: &'static str = "\u{03bb}"; // unicode 03bb is lower case lambda
 // \u{03c0} is Pi and 03a0 is PI
 const LAM: &'static str = "lambda "; // unicode 03bb is lower case lambda
 
+const TypedFix:str16 = str16::const_make("FIX");
+
 #[derive(Debug, Clone)]
 pub enum Term {
     Var(str16),
@@ -45,6 +47,14 @@ impl Term {
         self.format(lowerlam)
     }
     */
+
+    pub fn is_fixpt(&self) -> bool  {
+      match self {
+        Var(x) if x==&TypedFix => true,
+        _ => false
+      }
+    }//is_fixpt
+
     pub fn format(&self, lam: &str) -> String {
         match self {
             Var(x) => format!("{}", x),
@@ -330,7 +340,7 @@ pub fn eval_prog(prog: &Vec<LBox<Term>>, reducer:&mut BetaReducer) {
             Def(weak, x, xdef) => {
                 if reducer.typed {
 		  let stype;
-		  if x=="FIX" {
+		  if x==&TypedFix {
 		    stype = Lstype::fixpttype();
 		  }
 		  else {
@@ -356,7 +366,13 @@ pub fn eval_prog(prog: &Vec<LBox<Term>>, reducer:&mut BetaReducer) {
             Weak(t) => {
 
                 if reducer.typed {
-                  let statictype = t.type_infer(reducer);
+                  let statictype;
+                  if t.is_fixpt() {
+                    statictype = Lstype::fixpttype();
+                  }
+                  else {
+                    statictype = t.type_infer(reducer); // not a PI-scheme
+                  }
                   if statictype.format().contains("UNTYPABLE") {
                     println!("TYPE INFERENCE FOR <{}> FAILED : {}\nEVALUATION CANCELED",t.format(reducer.lamsym), statictype.format());
                     continue;
@@ -371,7 +387,13 @@ pub fn eval_prog(prog: &Vec<LBox<Term>>, reducer:&mut BetaReducer) {
             }
             t => {
                 if reducer.typed {
-                  let statictype = t.type_infer(reducer);
+                  let statictype;
+                  if t.is_fixpt() {
+                    statictype = Lstype::fixpttype();
+                  }
+                  else {
+                    statictype = t.type_infer(reducer); // not a PI-scheme
+                  }
                   if statictype.format().contains("UNTYPABLE") {
                     println!("TYPE INFERENCE FOR <{}> FAILED : {}\nEVALUATION CANCELED",t.format(reducer.lamsym), statictype.format());
                     continue;
@@ -392,8 +414,6 @@ pub fn eval_prog(prog: &Vec<LBox<Term>>, reducer:&mut BetaReducer) {
         } //match line
     } // for each line in prog
 } //eval_prog
-
-
 
 
 
