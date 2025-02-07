@@ -83,6 +83,19 @@ impl Lstype
       _ => self.clone(),
     }//match
   }//apply_subst
+
+  fn apply_unifier(&self, unifier:&HashMap<u16,Lstype> ) -> Lstype {
+    match self {
+      Tvar(y) if unifier.contains_key(y) => unifier[y].clone(),
+      Tarrow(a,b) => {
+         let ta = a.apply_unifier(unifier);
+         let tb = b.apply_unifier(unifier);
+         Tarrow(Box::new(ta), Box::new(tb))
+      }
+      _ => self.clone(),
+    }//match    
+  }
+
   fn mut_subst(&mut self, substs:&HashMap<u16,Lstype> ) {
     match self {
       Tvar(y) if substs.contains_key(y) => { *self = substs[y].clone(); },
@@ -222,13 +235,14 @@ impl SymbolTable {
   }//lookup
   fn apply_unifier(&mut self, unifier:&HashMap<u16,Lstype>) {
     let mut i = self.stack.len();
-    while i > 0 {
+    while i > self.bp {
       let entry = &self.stack[i-1];
       let mut newtype = entry.1.clone();
       if &newtype!=&Untypable {
         for (k,v) in unifier.iter() {
           newtype = newtype.apply_subst(*k,v);
         }
+//println!("type of {} updated to {}",self.stack[i-1].0, newtype.format());
         self.stack[i-1].1 = newtype;
       }
       i -= 1;
@@ -273,34 +287,33 @@ impl Term
             println!("In the typed mode, the undefined free variable {} cannot be typed",x);
         }
       },
+
+////////// try global unification set of equations?
+
       Abs(x,m) => {
         let ti = reducer.symtab.newtvar();
         let xpos = reducer.symtab.stack.len();
         reducer.symtab.stack.push((*x,Tvar(ti)));
         let tm = m.infer_type(reducer);
-        //if &tm != &Untypable { 
-          let tx = Var(*x).infer_type(reducer); // type may have changed
-          //if &tx != &Untypable {
-            reducer.symtab.stack[xpos].1 = Untypable; //mark position as invalid
-            let mut i = reducer.symtab.stack.len();
-            while i>0 && &reducer.symtab.stack[i-1].1==&Untypable {
-              reducer.symtab.stack.pop();
-              i -= 1;
-            }
-            answer = Tarrow(bx(tx),bx(tm));
-          //}
-        //}
+        let tx = Var(*x).infer_type(reducer); // type may have changed
+        reducer.symtab.stack[xpos].1 = Untypable; //mark position as invalid
+        let mut i = reducer.symtab.stack.len();
+        while i>0 && &reducer.symtab.stack[i-1].1==&Untypable {
+          reducer.symtab.stack.pop();
+          i -= 1;
+        }
+        answer = Tarrow(bx(tx),bx(tm));
       },
       App(s,t) => {
-        let ts = s.infer_type(reducer);
-        // unify with new type
-        let ds = reducer.symtab.newtvar();
-        let cs = reducer.symtab.newtvar();
-        let ts2 = Tarrow(bx(Tvar(ds)),bx(Tvar(cs)));
         let tt = t.infer_type(reducer);
-        //println!("type of tt: {:?}", &tt);
-        //if &tt==&Untypable { return answer; }
-        let mut type_equations = vec![(ts,ts2), (tt,Tvar(ds))];
+        let ts = s.infer_type(reducer);
+        //let ds = reducer.symtab.newtvar();        
+        let cs = reducer.symtab.newtvar();
+        let ts2 = Tarrow(bx(tt),bx(Tvar(cs)));
+
+
+        //let mut type_equations = vec![(ts,ts2), (tt,Tvar(ds))];
+        let mut type_equations = vec![(ts,ts2)];        
         let mut unifyresult = unify_types(&mut type_equations);
         if let Some(mut unifier) = unifyresult {
           reducer.symtab.apply_unifier(&unifier);
@@ -333,3 +346,17 @@ impl Term
 
 
 fn bx<T>(x:T) -> Box<T> { Box::new(x) }
+
+fn print_equations(e:&[(Lstype,Lstype)]) {
+   println!("equations: --------");
+   for (a,b) in e {
+     println!("{}  =  {}", a.format(), b.format());
+   }
+}
+
+fn print_unifier(u:&HashMap<u16,Lstype>) {
+   println!("unifier:------");
+   for (a,b) in u.iter() {
+     println!("{} -> {}", Tvar(*a).format(),b.format());
+   }
+}

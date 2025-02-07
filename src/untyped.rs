@@ -26,9 +26,12 @@ const TypedFix:str16 = str16::const_make("FIX");
 
 #[derive(Debug, Clone)]
 pub enum Term {
+    Typeexp(Lstype),
     Var(str16),
+    TypedVar(str16,Lstype),
     Const(i64),
     Abs(str16, LBox<Term>),
+    TypedAbs(str16,Lstype,LBox<Term>),
     App(LBox<Term>, LBox<Term>),
     Def(bool, str16, LBox<Term>), // true bool means eval to weak-head form
     Weak(LBox<Term>),             // eval into weak head normal form
