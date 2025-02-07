@@ -69,7 +69,7 @@ missing from the definition of `INFINITY`.  Full, normal-order
 evaluation and weak call-by-value are the only reduction strategies
 implemented in lambdascript.
 
-One can switch from typed to untyped mode with the `typed` directive.
+One can switch from untyped to the typed mode with the `typed` directive.
 There is no syntax for types in terms.  Most general types are always
 inferred.  Undefined free variables are not considered typable. Notice
 that `I I` is well-typed because the type *scheme* inferred for `I` can
